@@ -25,11 +25,12 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # packeages 
     "rest_framework",
-    
-    #local apps
-    'users',
-    'shared'
+    "rest_framework_simplejwt",
+    # local apps
+    "users",
+    "shared",
 ]
 
 MIDDLEWARE = [
@@ -70,9 +71,9 @@ DATABASES = {
         "ENGINE": "django.db.backends.postgresql_psycopg2",
         "NAME": config("DB_NAME"),
         "USER": config("USER"),
-        "PASSWORD" : config('PASSWORD'),
-        "HOST" : config("HOST"),
-        "PORT" : config("PORT")
+        "PASSWORD": config("PASSWORD"),
+        "HOST": config("HOST"),
+        "PORT": config("PORT"),
     }
 }
 
@@ -95,8 +96,8 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT  = BASE_DIR / 'media'
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 
 # Internationalization
@@ -110,7 +111,7 @@ USE_I18N = True
 
 USE_TZ = True
 
-AUTH_USER_MODEL = 'users.User'
+AUTH_USER_MODEL = "users.User"
 
 
 # Static files (CSS, JavaScript, Images)

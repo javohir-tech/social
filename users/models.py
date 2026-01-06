@@ -1,9 +1,12 @@
+import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from shared.models import BaseModel
 from datetime import timedelta
 from django.utils import timezone
 from random import randint
+from django.contrib.auth.hashers import identify_hasher
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 # choices
@@ -23,6 +26,17 @@ class AuthStatus(models.TextChoices):
     CODE_VERIFED = "code_verified", "Code verified"
     DONE = "done", "Done"
     PHOTO = "photo", "Photo"
+
+
+# Hesh  qilinganligini tekshirish
+
+
+def is_hashed(password):
+    try:
+        identify_hasher(password)
+        return True
+    except Exception:
+        return False
 
 
 class User(AbstractUser, BaseModel):
@@ -48,6 +62,49 @@ class User(AbstractUser, BaseModel):
     def __str__(self):
         return self.username
 
+    def check_username(self):
+        if not self.username:
+            temp_username = f"instagram-{uuid.uuid4().__str__().split("-")[-1]}"
+
+            while User.objects.filter(username=temp_username):
+                temp_username = f"{temp_username}{randint(1, 9)}"
+            self.username = temp_username
+
+    def check_email(self):
+        if self.email:
+            normalize_email = self.email.lower().strip()
+            self.email = normalize_email
+
+    def check_password(self):
+        if not self.password:
+            temp_password = f"password-{uuid.uuid4().__str__().split("-")[-1]}"
+            self.password = temp_password
+
+    def hashing_password(self):
+        if not is_hashed(self.password):
+            self.set_password(self.password)
+
+    def token(self):
+        refresh = RefreshToken.for_user(self)
+        return {"access_token": str(refresh.access_token), "refresh": str(refresh)}
+
+    def clean(self):
+        self.check_username()
+        self.check_email()
+        self.check_password()
+        self.hashing_password()
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            self.clean()
+        else:
+            self.check_email()
+
+            if self.password and not is_hashed(self.password):
+                self.set_password(self.password)
+
+        super(User, self).save(*args, **kwargs)
+
 
 EXPIRE_EMAIL = 5
 EXPIRE_PHONE = 2
@@ -72,13 +129,13 @@ class UserConfirmation(BaseModel):
             elif self.auth_type == AuthType.VIA_PHONE:
                 self.expiration_date = timezone.now() + timedelta(minutes=EXPIRE_PHONE)
         super(UserConfirmation, self).save(*args, **kwargs)
-        
-    def is_expired(self) :
+
+    def is_expired(self):
         return timezone.now() > self.expiration_date
-    
-    def can_verify(self) :
-        if self.is_confirmed :
+
+    def can_verify(self):
+        if self.is_confirmed:
             return False
-        if self.is_expired :
+        if self.is_expired():
             return False
         return True
