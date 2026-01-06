@@ -72,3 +72,13 @@ class UserConfirmation(BaseModel):
             elif self.auth_type == AuthType.VIA_PHONE:
                 self.expiration_date = timezone.now() + timedelta(minutes=EXPIRE_PHONE)
         super(UserConfirmation, self).save(*args, **kwargs)
+        
+    def is_expired(self) :
+        return timezone.now() > self.expiration_date
+    
+    def can_verify(self) :
+        if self.is_confirmed :
+            return False
+        if self.is_expired :
+            return False
+        return True
