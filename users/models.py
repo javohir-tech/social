@@ -42,12 +42,12 @@ class User(AbstractUser, BaseModel):
         return f"{self.first_name} {self.last_name}"
 
     def create_verify_code(self, auth_type):
-        code  = ''.join([str(randint(0, 9)) for _ in range(4)])
-        UserConfirmation.objects.create(
-            code = code,
-            user = self,
-            auth_type = auth_type
-        )
+        code = "".join([str(randint(0, 9)) for _ in range(4)])
+        UserConfirmation.objects.create(code=code, user=self, auth_type=auth_type)
+
+    def __str__(self):
+        return self.username
+
 
 EXPIRE_EMAIL = 5
 EXPIRE_PHONE = 2
@@ -56,7 +56,9 @@ EXPIRE_PHONE = 2
 class UserConfirmation(BaseModel):
     code = models.CharField(max_length=4)
     auth_type = models.CharField(max_length=31, choices=AuthType.choices)
-    user = models.ForeignKey("users.User", on_delete=models.CASCADE, related_name="verify_type")
+    user = models.ForeignKey(
+        "users.User", on_delete=models.CASCADE, related_name="verify_type"
+    )
     expiration_date = models.DateTimeField(null=True, blank=True)
     is_confirmed = models.BooleanField(default=False)
 
