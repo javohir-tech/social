@@ -58,6 +58,7 @@ class User(AbstractUser, BaseModel):
     def create_verify_code(self, auth_type):
         code = "".join([str(randint(0, 9)) for _ in range(4)])
         UserConfirmation.objects.create(code=code, user=self, auth_type=auth_type)
+        return code
 
     def __str__(self):
         return self.username
@@ -66,7 +67,7 @@ class User(AbstractUser, BaseModel):
         if not self.username:
             temp_username = f"instagram-{uuid.uuid4().__str__().split("-")[-1]}"
 
-            while User.objects.filter(username=temp_username):
+            while User.objects.filter(username=temp_username).exists():
                 temp_username = f"{temp_username}{randint(1, 9)}"
             self.username = temp_username
 
@@ -131,6 +132,8 @@ class UserConfirmation(BaseModel):
         super(UserConfirmation, self).save(*args, **kwargs)
 
     def is_expired(self):
+        if self.expiration_date is None:
+            return True
         return timezone.now() > self.expiration_date
 
     def can_verify(self):
