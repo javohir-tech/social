@@ -7,7 +7,7 @@ class SingUpSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
 
     def __init__(self, *args, **kwargs):
-        super(SingUpSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs) # barcha filedlar tayyorlanip olinadi shundan song dinamik fiel qoshsa boladi 
         self.fields["email_or_phone"] = serializers.CharField(max_length=31)
 
     class Meta:
@@ -19,7 +19,7 @@ class SingUpSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, data):
-        super(SingUpSerializer, self).validate(data)
+        super().validate(data) # bu fieldslarga qoshilgan barcha validatsiyalaarni tekshirip oladi 
         data = self.auth_validate(data)
         return data
 
