@@ -124,7 +124,7 @@ class UserConfirmation(BaseModel):
         return self.user.__str__()
 
     def save(self, *args, **kwargs):
-        if not self.pk:
+        if self._state.adding:
             if self.auth_type == AuthType.VIA_EMAIL:
                 self.expiration_date = timezone.now() + timedelta(minutes=EXPIRE_EMAIL)
             elif self.auth_type == AuthType.VIA_PHONE:
