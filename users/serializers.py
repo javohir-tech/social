@@ -1,6 +1,8 @@
+import phonenumbers
 from .models import User, UserConfirmation, AuthStatus, AuthType
 from rest_framework import serializers, exceptions
 from shared.utility import check_email_or_phone , send_email
+from rest_framework.exceptions import ValidationError
 
 
 class SingUpSerializer(serializers.ModelSerializer):

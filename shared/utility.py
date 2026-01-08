@@ -1,5 +1,6 @@
 import re
 import threading
+import phonenumbers
 from rest_framework.exceptions import ValidationError
 from django.template.loader import render_to_string
 from users.models import AuthType
@@ -15,10 +16,10 @@ def check_email_or_phone(email_or_phone):
         return AuthType.VIA_EMAIL
     elif phone_regex.fullmatch(email_or_phone):
         return AuthType.VIA_PHONE
-
+    
     data = {
         "success": False,
-        "message": "Emailingi yoki Telefonn raqamingiz natogri yuborilgan ",
+        "message": "Emailingi yoki Telefonn raqamingiz natogri yuborilgan",
     }
 
     raise ValidationError(data)
@@ -53,10 +54,12 @@ def send_email(to_email, code):
     html_content = render_to_string(
         "email/authenticated/activate_user.html", {"code": code}
     )
-    
-    Email.send_email({
-        'subject' : 'Tastiqlsh kodi',
-        'body' : html_content ,
-        'content_type' : 'html',
-        'email_to' : to_email
-    })
+
+    Email.send_email(
+        {
+            "subject": "Tastiqlsh kodi",
+            "body": html_content,
+            "content_type": "html",
+            "email_to": to_email,
+        }
+    )
