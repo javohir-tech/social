@@ -1,6 +1,6 @@
 from .models import User, UserConfirmation, AuthStatus, AuthType
 from rest_framework import serializers, exceptions
-from shared.utility import check_email_or_phone
+from shared.utility import check_email_or_phone , send_email
 
 
 class SingUpSerializer(serializers.ModelSerializer):
@@ -28,7 +28,8 @@ class SingUpSerializer(serializers.ModelSerializer):
         user.save()
         if validated_data["auth_type"] == AuthType.VIA_EMAIL:
             code = user.create_verify_code(AuthType.VIA_EMAIL)
-            print(code)
+            # print("=" * 50 )
+            send_email(user.email , code)
             pass
         elif validated_data["auth_type"] == AuthType.VIA_PHONE:
             code = user.create_verify_code(AuthType.VIA_PHONE)
@@ -55,6 +56,6 @@ class SingUpSerializer(serializers.ModelSerializer):
             data = {"success": False, "message": "email yoki telefon raqam hato"}
             raise exceptions.ValidationError(data)
 
-        print("data", data)
+        # print("data", data)
 
         return data
