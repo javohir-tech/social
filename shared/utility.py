@@ -16,7 +16,7 @@ def check_email_or_phone(email_or_phone):
         return AuthType.VIA_EMAIL
     elif phone_regex.fullmatch(email_or_phone):
         return AuthType.VIA_PHONE
-    
+
     data = {
         "success": False,
         "message": "Emailingi yoki Telefonn raqamingiz natogri yuborilgan",

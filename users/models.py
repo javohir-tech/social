@@ -76,7 +76,7 @@ class User(AbstractUser, BaseModel):
             normalize_email = self.email.lower().strip()
             self.email = normalize_email
 
-    def check_password(self):
+    def check_user_password(self):
         if not self.password:
             temp_password = f"password-{uuid.uuid4().__str__().split("-")[-1]}"
             self.password = temp_password
@@ -92,7 +92,7 @@ class User(AbstractUser, BaseModel):
     def clean(self):
         self.check_username()
         self.check_email()
-        self.check_password()
+        self.check_user_password()
         self.hashing_password()
 
     def save(self, *args, **kwargs):
