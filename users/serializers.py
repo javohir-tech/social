@@ -59,3 +59,9 @@ class SingUpSerializer(serializers.ModelSerializer):
         # print("data", data)
 
         return data
+    
+    def to_representation(self, instance):
+        data = super(SingUpSerializer , self).to_representation(instance)
+        data.update(instance.token())
+        
+        return data
