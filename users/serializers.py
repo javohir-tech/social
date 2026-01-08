@@ -1,7 +1,7 @@
 import phonenumbers
 from .models import User, UserConfirmation, AuthStatus, AuthType
 from rest_framework import serializers, exceptions
-from shared.utility import check_email_or_phone , send_email
+from shared.utility import check_email_or_phone, send_email
 from rest_framework.exceptions import ValidationError
 
 
@@ -26,12 +26,12 @@ class SingUpSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = User(**validated_data)
-        #user.clean()
+        # user.clean()
         user.save()
         if validated_data["auth_type"] == AuthType.VIA_EMAIL:
             code = user.create_verify_code(AuthType.VIA_EMAIL)
             # print("=" * 50 )
-            send_email(user.email , code)
+            send_email(user.email, code)
             pass
         elif validated_data["auth_type"] == AuthType.VIA_PHONE:
             code = user.create_verify_code(AuthType.VIA_PHONE)
@@ -61,9 +61,23 @@ class SingUpSerializer(serializers.ModelSerializer):
         # print("data", data)
 
         return data
-    
+
+    def validate_email_or_phone(this, value):
+        auth_type = check_email_or_phone(value)
+        if auth_type == AuthType.VIA_EMAIL:
+            if User.objects.filter(email=value).exists():
+                data = {"success": False, "message": "Bu emaildan oldin foydalaanilgan"}
+
+                raise ValidationError(data)
+
+        if auth_type == AuthType.VIA_PHONE:
+            if User.objects.filter(phone_number=value).exists():
+                data = {"success": False, "message": "Bu raqamdan oldin foydalaanilgan"}
+
+                raise ValidationError(data)
+
     def to_representation(self, instance):
-        data = super(SingUpSerializer , self).to_representation(instance)
+        data = super(SingUpSerializer, self).to_representation(instance)
         data.update(instance.token())
-        
+
         return data
