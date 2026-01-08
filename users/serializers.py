@@ -24,7 +24,7 @@ class SingUpSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = User(**validated_data)
-        user.clean()
+        #user.clean()
         user.save()
         if validated_data["auth_type"] == AuthType.VIA_EMAIL:
             code = user.create_verify_code(AuthType.VIA_EMAIL)

@@ -96,7 +96,7 @@ class User(AbstractUser, BaseModel):
         self.hashing_password()
 
     def save(self, *args, **kwargs):
-        if not self.pk:
+        if self._state.adding:
             self.clean()
         else:
             self.check_email()
