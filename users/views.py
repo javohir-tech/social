@@ -25,14 +25,16 @@ class VerifyView(APIView):
     def post(self, request, *args, **kwargs):
         user = self.request.user
         code = self.request.data.get("code")
+        
 
         if self.check_code(user, code) :
+            tokens = user.token()
             return Response(
                 data = {
                     'success' : True , 
                     'auth_status' : AuthStatus.CODE_VERIFED ,  
-                    'access' : user.token().get('access_token'),
-                    'token' : user.token().get("refresh")
+                    'access' : tokens.get('access_token'),
+                    'token' : tokens.get("refresh")
                 }
             )
 
@@ -50,9 +52,10 @@ class VerifyView(APIView):
                 'message' : 'siz kiritgan kod xato yoki mudati eskirgan bolishi mumkin'
             }
             raise ValidationError(data)
-        verify.update()
+        verify.update(is_confirmed = True)
         if user.auth_status == AuthStatus.NEW :
            user.auth_status = AuthStatus.CODE_VERIFED
+           user.save()
             
         return True
             
