@@ -13,6 +13,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import permission_classes
 from shared.utility import send_email
 from rest_framework.generics import UpdateAPIView
+from rest_framework import status
 
 
 class SingUpView(CreateAPIView):
@@ -88,7 +89,10 @@ class GetVerifyCode(APIView):
             )
 
         return Response(
-            {"success": True, "message": "Tastiqlash kodingiz qayta yuborildi!!!"}
+            {"success": True, 
+             "message": "Tastiqlash kodingiz qayta yuborildi!!!",
+             "access_token" : user.token().get('access_token')
+             }
         )
 
     @staticmethod
@@ -105,34 +109,44 @@ class GetVerifyCode(APIView):
             raise ValidationError(data)
 
 
-class EditUserView(UpdateAPIView):
-    permission_classes = [
-        IsAuthenticated,
-    ]
-    serializer_class = UpdateUserSerilazer
-    http_method_names = ["put", "patch"]
-    
-    def get_object(self):
-        return self.request.user
-    
-    def update(self, request, *args, **kwargs):
-        super().update(request , *args ,  **kwargs) 
-        data = {
-            'success' : True ,  
-            'message' :'muvafiqiyatli royhatdan  otingiz ', 
-            'auth_status' : self.request.user.auth_status
-        }
-        
-        return Response(data , status=200)
-        
-    def partial_update(self, request, *args, **kwargs):
-        super(request ,  *args , **kwargs)
-        data = {
-            'success' : True , 
-            'message' : 'muvafiqiyatli tuzatildi'
-        }
-        
-        return Response(data , status=200)
+class EditUserView(APIView):
 
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, *args, **kwargs):
+
+        serializer = UpdateUserSerilazer(
+            instance=self.request.user, data=self.request.data
+        )
+
+        if serializer.is_valid() :
+            serializer.save()
+            
+            return Response({
+                'success' : True ,  
+                'message' : 'Yangilandi', 
+                'auth_status' : self.request.user.auth_status
+            } , status=status.HTTP_200_OK)
+            
+        return Response(serializer.errors , status=status.HTTP_400_BAD_REQUEST)
+    
+    def patch(self , request , *args , **kwargs) :
+        
+        serializer = UpdateUserSerilazer(
+            instance =  self.request.user, 
+            data = request.data, 
+            partial = True
+        )
+        
+        if serializer.is_valid() :
+            serializer.save()
+            return Response({
+                'success' : True,  
+                'message' : 'Tuzatildi' ,  
+                'auth_status' : self.request.user.auth_status
+            } , status=status.HTTP_200_OK)
+            
+        return Response(serializer.errors , status=status.HTTP_400_BAD_REQUEST)
+    
 
 # Create your views here.
