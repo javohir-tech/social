@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .serializers import SingUpSerializer
+from .serializers import SingUpSerializer, UpdateUserSerilazer
 from rest_framework.generics import CreateAPIView
 from rest_framework.views import APIView
 from .models import User, UserConfirmation
@@ -12,6 +12,7 @@ from .models import AuthStatus, AuthType
 from rest_framework.response import Response
 from rest_framework.decorators import permission_classes
 from shared.utility import send_email
+from rest_framework.generics import UpdateAPIView
 
 
 class SingUpView(CreateAPIView):
@@ -61,7 +62,9 @@ class VerifyView(APIView):
 
 class GetVerifyCode(APIView):
 
-    permission_classes = [IsAuthenticated , ]
+    permission_classes = [
+        IsAuthenticated,
+    ]
 
     def get(self, request, *args, **kwargs):
 
@@ -83,24 +86,53 @@ class GetVerifyCode(APIView):
                     "error ": "erro  in GetVErifyCode  view wiews",
                 }
             )
-            
-        return Response({
-            'success' : True , 
-            'message' :'Tastiqlash kodingiz qayta yuborildi!!!'
-        })
+
+        return Response(
+            {"success": True, "message": "Tastiqlash kodingiz qayta yuborildi!!!"}
+        )
 
     @staticmethod
     def check_verifate(user):
         verifted = user.verify.filter(
-            expiration_date__gte=timezone.now(), is_confirmed = False
+            expiration_date__gte=timezone.now(), is_confirmed=False
         )
         if verifted.exists():
             data = {
                 "success": False,
                 "message": "Siz ga yuborilgan kod hozirda yaroqli . Biroz kuting ",
             }
-            
+
             raise ValidationError(data)
+
+
+class EditUserView(UpdateAPIView):
+    permission_classes = [
+        IsAuthenticated,
+    ]
+    serializer_class = UpdateUserSerilazer
+    http_method_names = ["put", "patch"]
+    
+    def get_object(self):
+        return self.request.user
+    
+    def update(self, request, *args, **kwargs):
+        super().update(request , *args ,  **kwargs) 
+        data = {
+            'success' : True ,  
+            'message' :'muvafiqiyatli royhatdan  otingiz ', 
+            'auth_status' : self.request.user.auth_status
+        }
+        
+        return Response(data , status=200)
+        
+    def partial_update(self, request, *args, **kwargs):
+        super(request ,  *args , **kwargs)
+        data = {
+            'success' : True , 
+            'message' : 'muvafiqiyatli tuzatildi'
+        }
+        
+        return Response(data , status=200)
 
 
 # Create your views here.
