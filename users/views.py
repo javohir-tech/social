@@ -7,10 +7,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import permissions
 from rest_framework.authentication import authenticate
 from django.utils import timezone
-from rest_framework.exceptions import  ValidationError
-from .models import AuthStatus
+from rest_framework.exceptions import ValidationError
+from .models import AuthStatus, AuthType
 from rest_framework.response import Response
-from rest_framework.decorators  import permission_classes
+from rest_framework.decorators import permission_classes
+from shared.utility import send_email
+
 
 class SingUpView(CreateAPIView):
     queryset = User.objects.all()
@@ -20,45 +22,85 @@ class SingUpView(CreateAPIView):
 
 class VerifyView(APIView):
 
-    permission_classes = (IsAuthenticated , )
+    permission_classes = (IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
         user = self.request.user
         code = self.request.data.get("code")
-        
 
-        if self.check_code(user, code) :
+        if self.check_code(user, code):
             tokens = user.token()
             return Response(
-                data = {
-                    'success' : True , 
-                    'auth_status' : AuthStatus.CODE_VERIFED ,  
-                    'access' : tokens.get('access_token'),
-                    'token' : tokens.get("refresh")
+                data={
+                    "success": True,
+                    "auth_status": AuthStatus.CODE_VERIFED,
+                    "access": tokens.get("access_token"),
+                    "refresh_token": tokens.get("refresh"),
                 }
             )
 
     @staticmethod
     def check_code(user, code):
         verify = user.verify.filter(
-            expiration_date__gte=timezone.now(),
-            code=code,
-            is_confirmed = False
+            expiration_date__gte=timezone.now(), code=code, is_confirmed=False
         )
-        
-        if not verify.exists() :
+
+        if not verify.exists():
             data = {
-                'success' : False,
-                'message' : 'siz kiritgan kod xato yoki mudati eskirgan bolishi mumkin'
+                "success": False,
+                "message": "siz kiritgan kod xato yoki mudati eskirgan bolishi mumkin",
             }
             raise ValidationError(data)
-        verify.update(is_confirmed = True)
-        if user.auth_status == AuthStatus.NEW :
-           user.auth_status = AuthStatus.CODE_VERIFED
-           user.save()
-            
+        verify.update(is_confirmed=True)
+        if user.auth_status == AuthStatus.NEW:
+            user.auth_status = AuthStatus.CODE_VERIFED
+            user.save()
+
         return True
+
+
+class GetVerifyCode(APIView):
+
+    permission_classes = [IsAuthenticated , ]
+
+    def get(self, request, *args, **kwargs):
+
+        user = self.request.user
+
+        self.check_verifate(user)
+
+        if user.auth_type == AuthType.VIA_EMAIL:
+            code = user.create_verify_code(AuthType.VIA_EMAIL)
+            send_email(user.email, code)
+        elif user.auth.type == AuthType.VIA_PHONE:
+            code = user.create_verify_code(AuthType.VIA_EMAIL)
+            send_email(user.email, code)
+        else:
+            raise ValidationError(
+                {
+                    "success": False,
+                    "message": "email yoki tel raqam notgri  kiritilgan",
+                    "error ": "erro  in GetVErifyCode  view wiews",
+                }
+            )
             
+        return Response({
+            'success' : True , 
+            'message' :'Tastiqlash kodingiz qayta yuborildi!!!'
+        })
+
+    @staticmethod
+    def check_verifate(user):
+        verifted = user.verify.filter(
+            expiration_date__gte=timezone.now(), is_confirmed = False
+        )
+        if verifted.exists():
+            data = {
+                "success": False,
+                "message": "Siz ga yuborilgan kod hozirda yaroqli . Biroz kuting ",
+            }
+            
+            raise ValidationError(data)
 
 
 # Create your views here.
