@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .serializers import SingUpSerializer, UpdateUserSerilazer
+from .serializers import SingUpSerializer, UpdateUserSerilazer , ChangeUserPhotoSerializer
 from rest_framework.generics import CreateAPIView
 from rest_framework.views import APIView
 from .models import User, UserConfirmation
@@ -146,6 +146,23 @@ class EditUserView(APIView):
                 'auth_status' : self.request.user.auth_status
             } , status=status.HTTP_200_OK)
             
+        return Response(serializer.errors , status=status.HTTP_400_BAD_REQUEST)
+    
+class ChangeUserPhotoView(APIView) :
+    
+    permission_classes = [IsAuthenticated]
+    
+    def put(self , request ,  *args , **kwargs) :
+        
+        serializer = ChangeUserPhotoSerializer(instance = request.user , data = request.data)
+        
+        if serializer.is_valid() :
+            serializer.save()
+            return Response({
+                'success' : True ,  
+                "message" : "Rasm muvvafiqiyatli yuklandi"
+            } ,  status=status.HTTP_200_OK)
+        
         return Response(serializer.errors , status=status.HTTP_400_BAD_REQUEST)
     
 

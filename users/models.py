@@ -25,7 +25,7 @@ class AuthStatus(models.TextChoices):
     NEW = "new", "New"
     CODE_VERIFED = "code_verified", "Code verified"
     DONE = "done", "Done"
-    PHOTO = "photo", "Photo"
+    PHOTO_Done = "photo_done", "Photo done"
 
 
 # Hesh  qilinganligini tekshirish

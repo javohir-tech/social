@@ -3,6 +3,7 @@ from rest_framework import serializers, exceptions
 from shared.utility import check_email_or_phone, send_email
 from rest_framework.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
+from django.core.validators import FileExtensionValidator
 
 
 class SingUpSerializer(serializers.ModelSerializer):
@@ -141,5 +142,25 @@ class UpdateUserSerilazer(serializers.Serializer):
         if instance.auth_status == AuthStatus.CODE_VERIFED:
             instance.auth_status = AuthStatus.DONE
         instance.save()
+
+        return instance
+
+
+class ChangeUserPhotoSerializer(serializers.Serializer):
+    photo = serializers.ImageField(
+        validators=[
+            FileExtensionValidator(
+                allowed_extensions=["jpg", "jpeg", "png", "heic", "heif"]
+            )
+        ]
+    )
+
+    def update(self, instance, validated_data):
+        photo_input = validated_data.get("photo_input", instance.photo)
+
+        if photo_input:
+            instance.photo = photo_input
+            instance.auth_status = AuthStatus.PHOTO_Done
+            instance.save()
 
         return instance
