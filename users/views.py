@@ -7,6 +7,7 @@ from .serializers import (
     LoginRefreshSerializer,
     LogOutSerializer,
     ForgetPasswordSerializer,
+    PasswordResetSerializer
 )
 from rest_framework.generics import CreateAPIView
 from rest_framework.views import APIView
@@ -25,6 +26,7 @@ from rest_framework import status
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
+from django.contrib.auth.hashers import check_password  
 
 
 class SingUpView(CreateAPIView):
@@ -228,10 +230,10 @@ class ForgetPasswordView(APIView):
 
         if user.auth_type == AuthType.VIA_EMAIL:
             code = user.create_verify_code(AuthType.VIA_EMAIL)
-            send_email(user.email, code)
+            send_email(user.email , code)
         elif user.auth_type == AuthType.VIA_PHONE:
             code = user.create_verify_code(AuthType.VIA_PHONE)
-            send_email(user.email, code)
+            send_email(user.email , code)
 
         token = user.token()
         return Response(
@@ -243,3 +245,27 @@ class ForgetPasswordView(APIView):
                 "user_status": user.auth_status,
             } , status=status.HTTP_200_OK
         )
+
+ # ////////////////////////////////////////////////////////////////////////////////////////////
+ # /////////////////////////// PASSWORD RESET /////////////////////////////////////////////////
+ # ////////////////////////////////////////////////////////////////////////////////////////////
+class ResetPasswordView(APIView) :
+    permission_classes = [IsAuthenticated]
+    serializer_class = PasswordResetSerializer
+         
+    def patch(self , request , *args , **kwargs) :
+        serializer = self.serializer_class(instance = self.request.user , data = self.request.data , partial = True)
+        
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        
+        return Response({
+            'success' : True , 
+            "message" : "parol muvvafaqiyatli o'zgartirldi" ,
+            'auth_status'  : request.user.auth_status
+        })
+            
+        
+# /////////////////////////////////////////////////////////////////////////
+# ///////////////////// LOGOUT        /////////////////////////////////////
+# /////////////////////////////////////////////////////////////////////////

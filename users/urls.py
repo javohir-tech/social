@@ -7,12 +7,14 @@ from .views import (
     ChangeUserPhotoView,
     LoginView,
     RefreshTokenView, 
-    ForgetPasswordView
+    ForgetPasswordView,
+    ResetPasswordView
 )
 
 urlpatterns = [
     path("login/", LoginView.as_view()),
     path("login/forget/", ForgetPasswordView.as_view()),
+    path("login/rest-password/", ResetPasswordView.as_view(), ),
     path("singup/", SingUpView.as_view()),
     path("verify/", VerifyView.as_view()),
     path("qayta/", GetVerifyCode.as_view()),

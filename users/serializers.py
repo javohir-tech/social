@@ -1,7 +1,7 @@
 from .models import User, UserConfirmation, AuthStatus, AuthType
 from rest_framework import serializers, exceptions
 from shared.utility import check_email_or_phone, send_email, check_auth_type
-from rest_framework.exceptions import ValidationError, PermissionDenied , NotFound
+from rest_framework.exceptions import ValidationError, PermissionDenied, NotFound
 from django.contrib.auth.password_validation import validate_password
 from django.core.validators import FileExtensionValidator
 from rest_framework_simplejwt.serializers import (
@@ -13,6 +13,7 @@ from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from rest_framework.generics import get_object_or_404
 from django.contrib.auth.models import update_last_login
 from django.db.models import Q
+from django.contrib.auth.hashers import check_password
 
 
 class SingUpSerializer(serializers.ModelSerializer):
@@ -279,12 +280,43 @@ class ForgetPasswordSerializer(serializers.Serializer):
         user = User.objects.filter(
             Q(username=user_input) | Q(email=user_input) | Q(phone_number=user_input)
         )
-        
-        if not user.exists() :
-            raise  ValidationError({
-                "success" : False,  
-                "message" :"user not found"
-            })
-        data['user'] = user.first()
-        
+
+        if not user.exists():
+            raise ValidationError({"success": False, "message": "user not found"})
+        data["user"] = user.first()
+
         return data
+
+
+# ////////////////////////////////////////////////////////////////////////////////////////////
+# /////////////////////////// PASSWORD RESET /////////////////////////////////////////////////
+# ////////////////////////////////////////////////////////////////////////////////////////////
+
+
+class PasswordResetSerializer(serializers.Serializer):
+    password = serializers.CharField(required = True)
+    new_password = serializers.CharField(required = True)
+    confirm_password = serializers.CharField(required = True)
+
+    def validate(self, data):
+
+        validate_password(data["new_password"])
+
+        if data["new_password"] != data["confirm_password"]:
+            raise ValidationError("siz yozgan parol va tastiqlash parollari mos emas")
+
+        return data
+
+    def update(self, instance, validated_data):
+        password = validated_data.get("password")
+        if not check_password(password , instance.password) :
+            raise ValidationError("parol notogri dabba")
+        
+        new_password = validated_data.get('new_password' , None)
+        
+        if new_password :
+            instance.set_password(new_password) # paswordni heshlaydi va db ga togridan togri saqlaydi 
+            instance.save()
+            
+        return instance
+    
