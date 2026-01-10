@@ -8,6 +8,7 @@ from django.core.mail import EmailMessage
 
 email_regex = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,7}")
 phone_regex = re.compile(r"^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$")
+username_regex = re.compile(r"^[a-zA-Z0-9]+$")
 
 
 def check_email_or_phone(email_or_phone):
@@ -23,6 +24,19 @@ def check_email_or_phone(email_or_phone):
     }
 
     raise ValidationError(data)
+
+
+def check_auth_type(user_input):
+    if email_regex.fullmatch(user_input):
+        return AuthType.VIA_EMAIL
+    elif phone_regex.fullmatch(user_input):
+        return AuthType.VIA_PHONE
+    elif username_regex.fullmatch(user_input):
+        return "username"
+
+    raise ValidationError(
+        {"success": False, "message": "Siz maydonni notogri toldirdingiz"}
+    )
 
 
 class EmailThread(threading.Thread):

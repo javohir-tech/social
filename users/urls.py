@@ -5,9 +5,11 @@ from .views import (
     GetVerifyCode,
     EditUserView,
     ChangeUserPhotoView,
+    LoginView,
 )
 
 urlpatterns = [
+    path("login/", LoginView.as_view()),
     path("singup/", SingUpView.as_view()),
     path("verify/", VerifyView.as_view()),
     path("qayta/", GetVerifyCode.as_view()),

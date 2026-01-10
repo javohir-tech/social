@@ -1,9 +1,11 @@
 from .models import User, UserConfirmation, AuthStatus, AuthType
 from rest_framework import serializers, exceptions
-from shared.utility import check_email_or_phone, send_email
-from rest_framework.exceptions import ValidationError
+from shared.utility import check_email_or_phone, send_email, check_auth_type
+from rest_framework.exceptions import ValidationError, PermissionDenied
 from django.contrib.auth.password_validation import validate_password
 from django.core.validators import FileExtensionValidator
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.contrib.auth import authenticate
 
 
 class SingUpSerializer(serializers.ModelSerializer):
@@ -164,3 +166,63 @@ class ChangeUserPhotoSerializer(serializers.Serializer):
             instance.save()
 
         return instance
+
+
+class SingInSerializer(TokenObtainPairSerializer):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields["username"] = serializers.CharField(read_only=True, required=False)
+        self.fields["user_input"] = serializers.CharField(required=True)
+
+    def validate(self, data):
+        data = self.auth_validate(data)
+        user = data.get('user')
+        data = user.token()
+        data['auth_status'] =  user.auth_status
+        data['full_name'] = user.full_name
+        
+        return data
+
+    
+    def auth_validate(self , data):
+        user_input = data.get("user_input")
+        login_type = check_auth_type(user_input)
+
+        if login_type == "username":
+            username = user_input
+        elif login_type == AuthType.VIA_EMAIL:
+            username = self.get_user(email = user_input)
+        elif login_type == AuthType.VIA_PHONE:
+            username = self.get_user(phone_number = user_input)
+
+        current_user = User.objects.get(username=username)
+
+        if current_user and current_user.auth_status in [
+            AuthStatus.NEW,
+            AuthStatus.CODE_VERIFED
+        ]:
+            raise PermissionDenied("Siz to'liq ro'yhatdan o'tmagansiz")
+
+        user = authenticate(username=current_user.username, password=data["password"])
+        
+        if user is not None :
+            data['user'] = user
+        else : 
+            raise ValidationError({
+                'success' : False , 
+                'message' : 'Sorry, login or password you entered is incorrect. Please check and trg again!'
+            })
+            
+        return data
+
+    @staticmethod
+    def get_user(**kwargs):
+        user = User.objects.filter(**kwargs)
+        if not user.exists():
+            raise ValidationError(
+                {"success": False, "message": "No active account found"}
+            )
+
+        return user.first()
