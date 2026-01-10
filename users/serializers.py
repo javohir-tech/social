@@ -4,8 +4,11 @@ from shared.utility import check_email_or_phone, send_email, check_auth_type
 from rest_framework.exceptions import ValidationError, PermissionDenied
 from django.contrib.auth.password_validation import validate_password
 from django.core.validators import FileExtensionValidator
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer , TokenRefreshSerializer
 from django.contrib.auth import authenticate
+from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework.generics import get_object_or_404
+from django.contrib.auth.models import update_last_login
 
 
 class SingUpSerializer(serializers.ModelSerializer):
@@ -193,7 +196,7 @@ class SingInSerializer(TokenObtainPairSerializer):
         if login_type == "username":
             username = user_input
         elif login_type == AuthType.VIA_EMAIL:
-            username = self.get_user(email = user_input)
+            username = self.get_user(email__iexact = user_input)
         elif login_type == AuthType.VIA_PHONE:
             username = self.get_user(phone_number = user_input)
 
@@ -226,3 +229,19 @@ class SingInSerializer(TokenObtainPairSerializer):
             )
 
         return user.first()
+    
+    
+# ////////////////////////////////
+# ///// REFRESH SERIALIZER ///////
+# ////////////////////////////////
+class LoginRefreshSerializer(TokenRefreshSerializer) :
+    
+    def validate(self, attrs):
+        data  =  super().validate(attrs)
+        access_token_instance = AccessToken(data['access'])
+        user_id = access_token_instance['user_id']
+        user = get_object_or_404(User , id = user_id)
+        update_last_login(None , user)
+        data['refresh'] = attrs['refresh']
+        
+        return data

@@ -54,6 +54,10 @@ class User(AbstractUser, BaseModel):
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
+    
+    #/////////////////////////////////////////////////////
+    #///////////// CREATE  VERIFY CODE //////////////////
+    #////////////////////////////////////////////////////
 
     def create_verify_code(self, auth_type):
         code = "".join([str(randint(0, 9)) for _ in range(4)])
@@ -85,6 +89,9 @@ class User(AbstractUser, BaseModel):
         if not is_hashed(self.password):
             self.set_password(self.password)
 
+    #///////////////////////////////////////////////////////////////////
+    #////////////////////// TOKEN CREATE ///////////////////////////////
+    #///////////////////////////////////////////////////////////////////
     def token(self):
         refresh = RefreshToken.for_user(self)
         return {"access_token": str(refresh.access_token), "refresh": str(refresh)}

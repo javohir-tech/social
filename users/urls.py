@@ -6,6 +6,7 @@ from .views import (
     EditUserView,
     ChangeUserPhotoView,
     LoginView,
+    RefreshTokenView
 )
 
 urlpatterns = [
@@ -15,4 +16,5 @@ urlpatterns = [
     path("qayta/", GetVerifyCode.as_view()),
     path("change/", EditUserView.as_view()),
     path("photo/", ChangeUserPhotoView.as_view()),
+    path("refresh/" , RefreshTokenView.as_view())
 ]

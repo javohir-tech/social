@@ -1,5 +1,11 @@
 from django.shortcuts import render
-from .serializers import SingUpSerializer, UpdateUserSerilazer , ChangeUserPhotoSerializer , SingInSerializer
+from .serializers import (
+    SingUpSerializer, 
+    UpdateUserSerilazer , 
+    ChangeUserPhotoSerializer , 
+    SingInSerializer , 
+    LoginRefreshSerializer
+    )
 from rest_framework.generics import CreateAPIView
 from rest_framework.views import APIView
 from .models import User, UserConfirmation
@@ -14,7 +20,7 @@ from rest_framework.decorators import permission_classes
 from shared.utility import send_email
 from rest_framework.generics import UpdateAPIView
 from rest_framework import status
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.views import TokenObtainPairView , TokenRefreshView
 
 
 class SingUpView(CreateAPIView):
@@ -168,6 +174,12 @@ class ChangeUserPhotoView(APIView) :
     
 class LoginView(TokenObtainPairView) :
     serializer_class = SingInSerializer
+    
+# ///////////////////////////////////////////
+# /////// REFRESH TOKEN CREATE //////////////
+# ///////////////////////////////////////////
+class RefreshTokenView(TokenRefreshView) :
+    serializer_class = LoginRefreshSerializer
     
 
 
