@@ -1,14 +1,18 @@
 from .models import User, UserConfirmation, AuthStatus, AuthType
 from rest_framework import serializers, exceptions
 from shared.utility import check_email_or_phone, send_email, check_auth_type
-from rest_framework.exceptions import ValidationError, PermissionDenied
+from rest_framework.exceptions import ValidationError, PermissionDenied , NotFound
 from django.contrib.auth.password_validation import validate_password
 from django.core.validators import FileExtensionValidator
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer , TokenRefreshSerializer
+from rest_framework_simplejwt.serializers import (
+    TokenObtainPairSerializer,
+    TokenRefreshSerializer,
+)
 from django.contrib.auth import authenticate
-from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from rest_framework.generics import get_object_or_404
 from django.contrib.auth.models import update_last_login
+from django.db.models import Q
 
 
 class SingUpSerializer(serializers.ModelSerializer):
@@ -181,43 +185,44 @@ class SingInSerializer(TokenObtainPairSerializer):
 
     def validate(self, data):
         data = self.auth_validate(data)
-        user = data.get('user')
+        user = data.get("user")
         data = user.token()
-        data['auth_status'] =  user.auth_status
-        data['full_name'] = user.full_name
-        
+        data["auth_status"] = user.auth_status
+        data["full_name"] = user.full_name
+
         return data
 
-    
-    def auth_validate(self , data):
+    def auth_validate(self, data):
         user_input = data.get("user_input")
         login_type = check_auth_type(user_input)
 
         if login_type == "username":
             username = user_input
         elif login_type == AuthType.VIA_EMAIL:
-            username = self.get_user(email__iexact = user_input)
+            username = self.get_user(email__iexact=user_input)
         elif login_type == AuthType.VIA_PHONE:
-            username = self.get_user(phone_number = user_input)
+            username = self.get_user(phone_number=user_input)
 
         current_user = User.objects.get(username=username)
 
         if current_user and current_user.auth_status in [
             AuthStatus.NEW,
-            AuthStatus.CODE_VERIFED
+            AuthStatus.CODE_VERIFED,
         ]:
             raise PermissionDenied("Siz to'liq ro'yhatdan o'tmagansiz")
 
         user = authenticate(username=current_user.username, password=data["password"])
-        
-        if user is not None :
-            data['user'] = user
-        else : 
-            raise ValidationError({
-                'success' : False , 
-                'message' : 'Sorry, login or password you entered is incorrect. Please check and trg again!'
-            })
-            
+
+        if user is not None:
+            data["user"] = user
+        else:
+            raise ValidationError(
+                {
+                    "success": False,
+                    "message": "Sorry, login or password you entered is incorrect. Please check and trg again!",
+                }
+            )
+
         return data
 
     @staticmethod
@@ -229,19 +234,57 @@ class SingInSerializer(TokenObtainPairSerializer):
             )
 
         return user.first()
-    
-    
+
+
 # ////////////////////////////////
 # ///// REFRESH SERIALIZER ///////
 # ////////////////////////////////
-class LoginRefreshSerializer(TokenRefreshSerializer) :
-    
+class LoginRefreshSerializer(TokenRefreshSerializer):
+
     def validate(self, attrs):
-        data  =  super().validate(attrs)
-        access_token_instance = AccessToken(data['access'])
-        user_id = access_token_instance['user_id']
-        user = get_object_or_404(User , id = user_id)
-        update_last_login(None , user)
-        data['refresh'] = attrs['refresh']
+        data = super().validate(attrs)
+        access_token_instance = AccessToken(data["access"])
+        user_id = access_token_instance["user_id"]
+        user = get_object_or_404(User, id=user_id)
+        update_last_login(None, user)
+        data["refresh"] = attrs["refresh"]
+
+        return data
+
+
+# ///////////////////////////////////////
+# ///////////// LOG OUT /////////////////
+# ///////////////////////////////////////
+
+
+class LogOutSerializer(serializers.Serializer):
+
+    refresh = serializers.CharField()
+
+
+# //////////////////////////////////////////
+# ////////// FORGET PASSWORD ///////////////
+# //////////////////////////////////////////
+class ForgetPasswordSerializer(serializers.Serializer):
+
+    user_input = serializers.CharField()
+
+    def validate(self, data):
+        user_input = data.get("user_input", None)
+        if user_input is None:
+            raise ValidationError(
+                {"success": False, "message": "maydon toldirilishi shart"}
+            )
+        check_auth_type(user_input)
+        user = User.objects.filter(
+            Q(username=user_input) | Q(email=user_input) | Q(phone_number=user_input)
+        )
+        
+        if not user.exists() :
+            raise  ValidationError({
+                "success" : False,  
+                "message" :"user not found"
+            })
+        data['user'] = user.first()
         
         return data
