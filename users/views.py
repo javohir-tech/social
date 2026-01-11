@@ -197,21 +197,22 @@ class RefreshTokenView(TokenRefreshView):
 
 
 class LogOutView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, *args, **kwargs):
-        serializer = LogOutSerializer(data=request.data)
-
-        serializer.is_valid(raise_exception=True)
-        try:
-            refresh_token = self.request.data["refresh"]
-            token = RefreshToken(refresh_token)
+    permission_classes = [IsAuthenticated] 
+    
+    def post(self , request , *args , **kwargs) :
+        
+        serializer = LogOutSerializer(data = request.data)
+        serializer.is_valid(raise_exception = True)
+        try : 
+            refresh = request.data['refresh'] 
+            token = RefreshToken(refresh)
             token.blacklist()
-            data = {"message": True, "message": "You are loggout success"}
-            return Response(data, status=status.HTTP_205_RESET_CONTENT)
-        except TokenError:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-
+            return Response({
+                "success" : True , 
+                "message" : "you are success logout"
+            })
+        except  TokenError:
+            return Response(status=400)
 
 # /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 # ///////////////////////////// PASSWORD FORGOT ///////////////////////////////////////////////////////////////////
