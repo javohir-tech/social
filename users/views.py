@@ -7,12 +7,12 @@ from .serializers import (
     LoginRefreshSerializer,
     LogOutSerializer,
     ForgetPasswordSerializer,
-    PasswordResetSerializer
+    PasswordResetSerializer,
 )
 from rest_framework.generics import CreateAPIView
 from rest_framework.views import APIView
 from .models import User, UserConfirmation
-from rest_framework.permissions import IsAuthenticated , AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import permissions
 from rest_framework.authentication import authenticate
 from django.utils import timezone
@@ -26,7 +26,7 @@ from rest_framework import status
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
-from django.contrib.auth.hashers import check_password  
+from django.contrib.auth.hashers import check_password
 
 
 class SingUpView(CreateAPIView):
@@ -196,23 +196,24 @@ class RefreshTokenView(TokenRefreshView):
     serializer_class = LoginRefreshSerializer
 
 
+# /////////////////////////////////////////////////////////////////////////
+# ///////////////////// LOGOUT        /////////////////////////////////////
+# /////////////////////////////////////////////////////////////////////////
 class LogOutView(APIView):
-    permission_classes = [IsAuthenticated] 
-    
-    def post(self , request , *args , **kwargs) :
-        
-        serializer = LogOutSerializer(data = request.data)
-        serializer.is_valid(raise_exception = True)
-        try : 
-            refresh = request.data['refresh'] 
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+
+        serializer = LogOutSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            refresh = request.data["refresh"]
             token = RefreshToken(refresh)
             token.blacklist()
-            return Response({
-                "success" : True , 
-                "message" : "you are success logout"
-            })
-        except  TokenError:
+            return Response({"success": True, "message": "you are success logout"})
+        except TokenError:
             return Response(status=400)
+
 
 # /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 # ///////////////////////////// PASSWORD FORGOT ///////////////////////////////////////////////////////////////////
@@ -223,18 +224,18 @@ class ForgetPasswordView(APIView):
 
     def post(self, request, *args, **kwargs):
 
-        serializer = self.serializer_class(data = request.data)
+        serializer = self.serializer_class(data=request.data)
 
         serializer.is_valid(raise_exception=True)
 
-        user = serializer.validated_data['user']
+        user = serializer.validated_data["user"]
 
         if user.auth_type == AuthType.VIA_EMAIL:
             code = user.create_verify_code(AuthType.VIA_EMAIL)
-            send_email(user.email , code)
+            send_email(user.email, code)
         elif user.auth_type == AuthType.VIA_PHONE:
             code = user.create_verify_code(AuthType.VIA_PHONE)
-            send_email(user.email , code)
+            send_email(user.email, code)
 
         token = user.token()
         return Response(
@@ -244,29 +245,57 @@ class ForgetPasswordView(APIView):
                 "access_token": token.get("access_token"),
                 "refresh_token": token.get("refresh"),
                 "user_status": user.auth_status,
-            } , status=status.HTTP_200_OK
+            },
+            status=status.HTTP_200_OK,
         )
 
- # ////////////////////////////////////////////////////////////////////////////////////////////
- # /////////////////////////// PASSWORD RESET /////////////////////////////////////////////////
- # ////////////////////////////////////////////////////////////////////////////////////////////
-class ResetPasswordView(APIView) :
-    permission_classes = [IsAuthenticated]
-    serializer_class = PasswordResetSerializer
-         
-    def patch(self , request , *args , **kwargs) :
-        serializer = self.serializer_class(instance = self.request.user , data = self.request.data , partial = True)
+
+# ////////////////////////////////////////////////////////////////////////////////////////////
+# /////////////////////////// PASSWORD RESET /////////////////////////////////////////////////
+# ////////////////////////////////////////////////////////////////////////////////////////////
+
+
+class RestPasswordVerifyView(APIView):
+
+    def post(self, request, *args, **kwargs):
         
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+        user_confirm = self.request.user.verify.filter(
+            expiration_date__gte=timezone.now()
+        ).first()
+        code  = user_confirm.code
+        
+        if code  != request.data['code']  :
+            raise ValidationError({
+                "success" : False ,  
+                "message" : "Siz kiritgan kod to'g'ri emas"
+            })
+            
+        token = self.request.user.token()
         
         return Response({
-            'success' : True , 
-            "message" : "parol muvvafaqiyatli o'zgartirldi" ,
-            'auth_status'  : request.user.auth_status
+            "success" : False ,  
+            "message" : "parolni o'zgartirishingiz mumkin", 
+            "access_token" : token.get('access_token'),
+            "refresh" : token.get('refresh'),
+            "auth_satus" : self.request.user.auth_status
         })
-            
-        
-# /////////////////////////////////////////////////////////////////////////
-# ///////////////////// LOGOUT        /////////////////////////////////////
-# /////////////////////////////////////////////////////////////////////////
+
+class ResetPasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PasswordResetSerializer
+
+    def patch(self, request, *args, **kwargs):
+        serializer = self.serializer_class(
+            instance=self.request.user, data=self.request.data, partial=True
+        )
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(
+            {
+                "success": True,
+                "message": "parol muvvafaqiyatli o'zgartirldi",
+                "auth_status": request.user.auth_status,
+            }
+        )

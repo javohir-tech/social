@@ -294,9 +294,9 @@ class ForgetPasswordSerializer(serializers.Serializer):
 
 
 class PasswordResetSerializer(serializers.Serializer):
-    password = serializers.CharField(required = True)
-    new_password = serializers.CharField(required = True)
-    confirm_password = serializers.CharField(required = True)
+    id  = serializers.UUIDField(read_only= True)
+    new_password = serializers.CharField(required = True , write_only = True)
+    confirm_password = serializers.CharField(required = True , write_only = True)
 
     def validate(self, data):
 
@@ -308,9 +308,6 @@ class PasswordResetSerializer(serializers.Serializer):
         return data
 
     def update(self, instance, validated_data):
-        password = validated_data.get("password")
-        if not check_password(password , instance.password) :
-            raise ValidationError("parol notogri dabba")
         
         new_password = validated_data.get('new_password' , None)
         
