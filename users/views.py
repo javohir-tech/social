@@ -27,9 +27,13 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from django.contrib.auth.hashers import check_password
+from .permissions import IsRegistartionToken, CanAccessStep2
+from .tokens import RegistrationToken
+from .authentication import RegistrationTokenAuthentication
 
 
 class SingUpView(CreateAPIView):
+
     queryset = User.objects.all()
     permission_classes = [permissions.AllowAny]
     serializer_class = SingUpSerializer
@@ -37,20 +41,23 @@ class SingUpView(CreateAPIView):
 
 class VerifyView(APIView):
 
-    permission_classes = (IsAuthenticated,)
+    authentication_classes = [RegistrationTokenAuthentication]
+    permission_classes = ( IsRegistartionToken, CanAccessStep2 , )
 
     def post(self, request, *args, **kwargs):
         user = self.request.user
         code = self.request.data.get("code")
 
         if self.check_code(user, code):
-            tokens = user.token()
+            # tokens = user.token()
+            token = RegistrationToken.for_user(user)
             return Response(
                 data={
                     "success": True,
                     "auth_status": AuthStatus.CODE_VERIFED,
-                    "access": tokens.get("access_token"),
-                    "refresh_token": tokens.get("refresh"),
+                    # "access": tokens.get("access_token"),
+                    # "refresh_token": tokens.get("refresh"),
+                    "token" : str(token)
                 }
             )
 
@@ -258,27 +265,29 @@ class ForgetPasswordView(APIView):
 class RestPasswordVerifyView(APIView):
 
     def post(self, request, *args, **kwargs):
-        
+
         user_confirm = self.request.user.verify.filter(
             expiration_date__gte=timezone.now()
         ).first()
-        code  = user_confirm.code
-        
-        if code  != request.data['code']  :
-            raise ValidationError({
-                "success" : False ,  
-                "message" : "Siz kiritgan kod to'g'ri emas"
-            })
-            
+        code = user_confirm.code
+
+        if code != request.data["code"]:
+            raise ValidationError(
+                {"success": False, "message": "Siz kiritgan kod to'g'ri emas"}
+            )
+
         token = self.request.user.token()
-        
-        return Response({
-            "success" : False ,  
-            "message" : "parolni o'zgartirishingiz mumkin", 
-            "access_token" : token.get('access_token'),
-            "refresh" : token.get('refresh'),
-            "auth_satus" : self.request.user.auth_status
-        })
+
+        return Response(
+            {
+                "success": False,
+                "message": "parolni o'zgartirishingiz mumkin",
+                "access_token": token.get("access_token"),
+                "refresh": token.get("refresh"),
+                "auth_satus": self.request.user.auth_status,
+            }
+        )
+
 
 class ResetPasswordView(APIView):
     permission_classes = [IsAuthenticated]

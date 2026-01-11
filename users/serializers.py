@@ -14,6 +14,7 @@ from rest_framework.generics import get_object_or_404
 from django.contrib.auth.models import update_last_login
 from django.db.models import Q
 from django.contrib.auth.hashers import check_password
+from .tokens import RegistrationToken
 
 
 class SingUpSerializer(serializers.ModelSerializer):
@@ -39,6 +40,7 @@ class SingUpSerializer(serializers.ModelSerializer):
         user = User(**validated_data)
         # user.clean()
         user.save()
+        
         if validated_data["auth_type"] == AuthType.VIA_EMAIL:
             code = user.create_verify_code(AuthType.VIA_EMAIL)
             # print("=" * 50 )
@@ -94,8 +96,10 @@ class SingUpSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super(SingUpSerializer, self).to_representation(instance)
+        token = RegistrationToken.for_user(instance)
+        data['token'] = str(token)
         data.update(instance.token())
-
+        
         return data
 
 
