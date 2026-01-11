@@ -9,7 +9,9 @@ from users.tokens import RegistrationToken
 
 class RegistrationTokenAuthentication(JWTAuthentication):
     """
+    
     Faqat registratsiya tokenlarini qabul qiladi
+    
     """
     
     def get_validated_token(self, raw_token):

@@ -1,6 +1,6 @@
 from rest_framework_simplejwt.tokens import Token
 from datetime import timedelta
-from django.utils import timezone
+from .models import User, AuthType
 
 
 class RegistrationToken(Token):
@@ -10,30 +10,33 @@ class RegistrationToken(Token):
 
     @classmethod
     def for_user(cls, user):
-
+        # RegistrationToken classi 
         token = cls()
         token["user_id"] = str(user.id)
         token["token_type"] = "registration"
-        token["current_step"] = user.auth_status
-        token["auth_type"] = user.auth_type
+        token["auth_status"] = user.auth_status
 
-        if user.email:
+        if user.auth_type is not None:
+            token["auth_type"] = user.auth_type
+
+        if user.auth_type == AuthType.VIA_EMAIL:
             token["email"] = user.email
-        if user.phone_number:
+        if user.auth_type == AuthType.VIA_PHONE:
             token["phone_number"] = user.phone_number
-
-        if user.username and not user.username.startswith("instagram-"):
-            token["username"] = user.username
 
         return token
 
     @classmethod
     def get_user_from_token(cls, token_str):
-        try:
-            from .models import User
 
+        try:
+            # yaratilgan object
             token = cls(token_str)
+
             user_id = token.get("user_id")
-            return User.objects.get(id=user_id)
+            user = User.objects.get(id=user_id)
+
+            return user
+
         except Exception:
             return None
