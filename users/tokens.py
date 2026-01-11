@@ -14,7 +14,7 @@ class RegistrationToken(Token):
         token = cls()
         token["user_id"] = str(user.id)
         token["token_type"] = "registration"
-        token["auth_status"] = user.auth_status
+        token["current_step"] = user.auth_status
 
         if user.auth_type is not None:
             token["auth_type"] = user.auth_type

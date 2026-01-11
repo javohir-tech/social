@@ -28,6 +28,17 @@ class CanAccessStep2(BasePermission) :
         
         return current_step == AuthStatus.NEW
     
+class CanAccessStep3(BasePermission) :
+    
+    def  has_permission(self, request, view):
+        
+        if not hasattr(request , 'auth')  or request.auth is None :
+            return False
+        
+        current_step = request.auth.get('current_step')
+        
+        return current_step == AuthStatus.CODE_VERIFED
+    
 # class CanAccessStep3(BasePermission):
 #     """
 #     3-bosqichga kirish: Username va password kiritish

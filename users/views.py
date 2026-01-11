@@ -27,7 +27,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from django.contrib.auth.hashers import check_password
-from .permissions import IsRegistartionToken, CanAccessStep2
+from .permissions import IsRegistartionToken, CanAccessStep2 , CanAccessStep3
 from .tokens import RegistrationToken
 from .authentication import RegistrationTokenAuthentication
 
@@ -132,7 +132,8 @@ class GetVerifyCode(APIView):
 
 class EditUserView(APIView):
 
-    permission_classes = [IsAuthenticated]
+    authentication_classes = [RegistrationTokenAuthentication]
+    permission_classes = [IsRegistartionToken , CanAccessStep3]
 
     def put(self, request, *args, **kwargs):
 
@@ -142,12 +143,13 @@ class EditUserView(APIView):
 
         if serializer.is_valid():
             serializer.save()
-
+            token = RegistrationToken.for_user(self.request.user)
             return Response(
                 {
                     "success": True,
                     "message": "Yangilandi",
                     "auth_status": self.request.user.auth_status,
+                    "token" : str(token)
                 },
                 status=status.HTTP_200_OK,
             )
