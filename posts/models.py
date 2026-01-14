@@ -19,6 +19,9 @@ class Post(BaseModel):
         db_table = "post"
         verbose_name = "post"
         verbose_name_plural = "posts"
+        
+    def __str__(self):
+        return f"{self.author} yozgan {self.caption} posti"
 
 
 class PostComment(BaseModel):
@@ -30,7 +33,7 @@ class PostComment(BaseModel):
     )
 
     def __str__(self):
-        return f"comment by {self.author}"
+        return f"comment by {self.author} {self.comment}"
 
 
 class PostLike(BaseModel):
