@@ -2,18 +2,18 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from shared.models import BaseModel
 from django.core.validators import FileExtensionValidator , MaxLengthValidator
-from django.db.models import UniqueConstraint
+from django.db.models import UniqueConstraint , CheckConstraint, Q
 
-User = get_user_model
+User = get_user_model()
 
 
 class Post(BaseModel):
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="posts")
     image = models.FileField(
-        validators=FileExtensionValidator(allowed_extensions=["jpeg", "jpg", "png"]),
+        validators=[FileExtensionValidator(allowed_extensions=["jpeg", "jpg", "png"])],
         upload_to='post_images' , 
     )
-    caption = models.TextField(validators=MaxLengthValidator(2000))
+    caption = models.TextField(validators=[MaxLengthValidator(2000)])
     
     class Meta :
         db_table = 'post'
@@ -23,13 +23,16 @@ class Post(BaseModel):
 class PostComment(BaseModel) :
     author = models.ForeignKey(User , on_delete=models.CASCADE )
     post = models.ForeignKey(Post , on_delete=models.CASCADE ,  related_name='comments')
-    comment = models.TextField(validators=MaxLengthValidator(3000))
+    comment = models.TextField(max_length=3000)
     parent = models.ForeignKey(
         'self' ,
         on_delete=models.CASCADE,
+        related_name='child',
         null=True, 
         blank=True
     )
+    
+    
     
     def  __str__(self):
         return f"comment by {self.author}"
