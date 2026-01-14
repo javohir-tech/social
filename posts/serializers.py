@@ -42,9 +42,9 @@ class PostSerializer(serializers.ModelSerializer):
 
         if request and request.user.is_authenticated:
             try:
-                like = PostLike.objects.get(author=request, post=obj)
+                like = PostLike.objects.get(author=request.user, post=obj)
                 return True
-            except Post.DoesNotExist:
+            except PostLike.DoesNotExist:
                 return False
 
         return False

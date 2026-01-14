@@ -143,13 +143,16 @@ class EditUserView(APIView):
 
         if serializer.is_valid():
             serializer.save()
+            tokens = self.request.user.token()
             token = RegistrationToken.for_user(self.request.user)
             return Response(
                 {
                     "success": True,
                     "message": "Yangilandi",
                     "auth_status": self.request.user.auth_status,
-                    "token" : str(token)
+                    "token" : str(token),
+                    "success_token"  : tokens.get("access_token"),
+                    "refresh" : tokens.get("refresh")
                 },
                 status=status.HTTP_200_OK,
             )
