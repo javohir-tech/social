@@ -8,11 +8,12 @@ from .serializers import (
     PostLikeSerializer,
     CommentLikeSerializer,
 )
-
+from shared.custom_pagiation import CustomPagination
 
 class PostListView(ListAPIView):
     serializer_class = PostSerializer
     permission_classes = [AllowAny]
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         return Post.objects.all()
