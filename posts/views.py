@@ -6,6 +6,7 @@ from rest_framework.generics import (
     ListCreateAPIView,
     RetrieveAPIView,
 )
+from rest_framework.views import APIView
 from rest_framework.permissions import (
     IsAuthenticated,
     AllowAny,
@@ -21,6 +22,7 @@ from .serializers import (
 from shared.custom_pagiation import CustomPagination
 from rest_framework.response import Response
 from rest_framework import status
+from django.shortcuts import get_object_or_404
 
 
 class PostListView(ListAPIView):
@@ -123,3 +125,70 @@ class CommentLikeList(ListAPIView):
     def get_queryset(self):
         comment_id = self.kwargs["pk"]
         return CommentLike.objects.filter(comment__id=comment_id)
+
+
+class PostLikeView(APIView):
+
+    def post(self, request, pk):
+        try:
+            post = get_object_or_404(Post, id=pk)
+            post_like = PostLike.objects.create(author=self.request.user, post=post)
+            serializer = PostLikeSerializer(post_like)
+
+            return Response(
+                {
+                    "success": True,
+                    "message": "like successfuly ",
+                    "data": serializer.data,
+                }
+            )
+        except Exception as e:
+            return Response(
+                {
+                    "success": False,
+                    "message": f"{e}",
+                }
+            )
+
+    def delete(self, request, pk):
+        try:
+            post = get_object_or_404(Post, id=pk)
+            PostLike.objects.filter(author=self.request.user, post=post).delete()
+
+            return Response({"success": True, "message": "dislike qilindi"})
+        except Exception as e:
+            return Response({"success": False, "message": f"{e} ochirilmadi"})
+
+
+class CommentLikeView(APIView):
+
+    def post(self, request, pk):
+        try:
+            comment = get_object_or_404(PostComment, id=pk)
+            comment_like = CommentLike.objects.create(
+                author=self.request.user, comment=comment
+            )
+
+            serializer = CommentLikeSerializer(comment_like)
+
+            return Response(
+                {"success": True, "message": "like bosildi ", "data": serializer.data}
+            )
+        except Exception as e:
+            return Response({"success": False, "message": f"{e}"})
+
+    def delete(self, request, pk):
+        try:
+            comment = get_object_or_404(PostComment, id=pk)
+            CommentLike.objects.filter(
+                author=self.request.user, comment=comment
+            ).first().delete()
+
+            return Response(
+                {
+                    "success": True,
+                    "message": "dislike qilindi",
+                }
+            )
+        except Exception as e:
+            return Response({"success": False, "message": f"{e}"})
