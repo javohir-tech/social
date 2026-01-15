@@ -1,6 +1,6 @@
 from django.shortcuts import render
-from rest_framework.generics import ListAPIView, CreateAPIView
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.generics import ListAPIView, CreateAPIView , RetrieveUpdateDestroyAPIView
+from rest_framework.permissions import IsAuthenticated, AllowAny , IsAuthenticatedOrReadOnly
 from .models import Post, PostComment, PostLike, CommentLike
 from .serializers import (
     PostSerializer,
@@ -10,6 +10,7 @@ from .serializers import (
 )
 from shared.custom_pagiation import CustomPagination
 from rest_framework.response import Response
+from rest_framework import status
 
 
 class PostListView(ListAPIView):
@@ -24,14 +25,6 @@ class PostListView(ListAPIView):
 class CreatePostView(CreateAPIView):
     serializer_class = PostSerializer
     permission_classes = [IsAuthenticated]
-
-    # def perform_create(self, serializer):
-    #     serializer.save(author= self.request.user)
-    #     return Response({
-    #         "success" : True,
-    #         "message" :"Successfully create",
-    #         "result" : serializer.data
-    #     })
     
     def create(self, request, *args, **kwargs):
         serializer = self.serializer_class(data = request.data)
@@ -45,5 +38,37 @@ class CreatePostView(CreateAPIView):
             }
         )
 
+class RetriveView(RetrieveUpdateDestroyAPIView):
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    
+    def put(self, request, *args, **kwargs):
+        post  =  self.get_object()
+        serializer = self.serializer_class(post , data = request.data , partial = True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(
+            {
+                "success" : True,
+                "message" : "successfuly edit",
+                "code": status.HTTP_200_OK,
+                "result" : serializer.data
+            }
+        )
+        
+    def delete(self, request, *args, **kwargs):
+        post = self.get_object()
+        post.delete()
+        return Response(
+            {
+                "success"  : True,
+                "message"  : "ochirildi ", 
+                "code" : status.HTTP_204_NO_CONTENT
+            }
+        )
+        
+        
 
-# Create your views here.
+             
+    
