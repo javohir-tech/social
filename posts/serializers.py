@@ -30,6 +30,7 @@ class PostSerializer(serializers.ModelSerializer):
             "comment_count",
             "me_liked",
         ]
+        
 
     def post_like_count(self, obj):
         return obj.likes.count()
