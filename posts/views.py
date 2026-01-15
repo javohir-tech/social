@@ -3,7 +3,8 @@ from rest_framework.generics import (
     ListAPIView,
     CreateAPIView,
     RetrieveUpdateDestroyAPIView,
-    ListCreateAPIView
+    ListCreateAPIView,
+    RetrieveAPIView,
 )
 from rest_framework.permissions import (
     IsAuthenticated,
@@ -79,12 +80,46 @@ class RetriveView(RetrieveUpdateDestroyAPIView):
         )
 
 
+class PostCommentView(ListAPIView):
+    serializer_class = PostCommentSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        post_id = self.kwargs["pk"]
+        return PostComment.objects.filter(post__id=post_id)
+
+
 class CommentListCreateView(ListCreateAPIView):
     serializer_class = PostCommentSerializer
     permission_classes = [IsAuthenticated]
     queryset = PostComment.objects.all()
-
+    pagination_class = CustomPagination
 
     def perform_create(self, serializer):
-        serializer.save(author = self.request.user)
-                
+        serializer.save(author=self.request.user)
+
+
+class CommentRetriveView(RetrieveAPIView):
+    serializer_class = PostCommentSerializer
+    permission_classes = [AllowAny]
+    queryset = PostComment.objects.all()
+
+
+class PostLikesView(ListAPIView):
+    serializer_class = PostLikeSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        post_id = self.kwargs["pk"]
+
+        return PostLike.objects.filter(post__id=post_id)
+
+
+class CommentLikeList(ListAPIView):
+    serializer_class = CommentLikeSerializer
+    permission_classes = [AllowAny]
+    pagination_class = CustomPagination
+
+    def get_queryset(self):
+        comment_id = self.kwargs["pk"]
+        return CommentLike.objects.filter(comment__id=comment_id)
